@@ -1,0 +1,22 @@
+trigger: none
+
+variables:
+  solution: $(Build.SourcesDirectory)/eforms.sln
+
+stages:
+- stage: Build
+  jobs:
+  - job: Build
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - template: templates/build.yml
+      parameters:
+        solution: $(solution)
+        sdkVersion: '6.x'
+      
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'test'
+        projects: '**/*.Test.csproj'
+        testRunTitle: 'Run Tests'

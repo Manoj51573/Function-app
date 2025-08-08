@@ -1,0 +1,43 @@
+parameters:
+- name: solution
+  type: string
+- name: sdkVersion
+  type: string
+  default: '3.1.x'
+    
+steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: ${{ parameters.sdkVersion }}
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore NuGet packages'
+  inputs:
+    command: 'restore'
+    projects: '**/*.csproj'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build solution'
+  inputs:
+    command: 'build'
+    projects: '${{ parameters.solution }}'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish solution'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/publish'
+
+- task: CopyFiles@2
+  inputs:
+    Contents: '**/*.pubxml'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/publish'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/publish'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'

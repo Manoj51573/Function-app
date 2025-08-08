@@ -1,0 +1,10 @@
+variables:
+- group : Dev
+- name: appServicesName
+  value: 'dot-az-dev-aue-asp-win01'
+- name: appServicesResourceGroupName
+  value: 'dot-az-dev-aue-rg-sharedappsvcs'
+- name: appServiceEnvironmentName
+  value: 'dot-az-dev-aue-ase-shareappsvc01'
+- name: functionAppSubscriptionId
+  value: 'c7f5e67a-99a1-4ae7-88d2-a8c1683c4d20'

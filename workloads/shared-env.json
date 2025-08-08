@@ -1,0 +1,20 @@
+{
+    "clientPrefix": "dot",
+    "apimCode": "api",
+    "applicationInsightsCode": "ain",
+    "appServiceEnvironmentCode": "ase",
+    "appServiceCode": "web",
+    "appServicePlanCode": "asp",
+    "dataFactoryCode": "adf",
+    "functionAppCode": "fun",
+    "keyVaultCode": "kvault",
+    "keyVaultGroupId":"vault",
+    "logAnalyticsCode": "wks",
+    "logicAppStandardCode": "las",
+    "resourceGroupCode": "rg",
+    "sqlServerCode": "sql",
+    "sqlServerGroupId":"sqlServer",
+    "storageAccountCode": "sta",
+    "storageAccountBlobGroupId":"blob",
+    "virtualNetworkCode": "vnet"
+}

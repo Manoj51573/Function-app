@@ -1,0 +1,91 @@
+trigger:
+  branches:
+    include:
+      - main
+      - dev
+      - releases/*
+      - uat/*
+
+variables:
+  rootPath: $(Build.SourcesDirectory)/workloads
+  solution: $(Build.SourcesDirectory)/eforms.sln
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+        - template: templates/build.yml
+          parameters:
+            solution: $(solution)
+            sdkVersion: '6.x'
+
+  - template: templates/stage-arm-deployment.yaml 
+    parameters:
+      templatePath: $(rootPath)/functionApp/main.bicep
+      apimTemplatePath: $(rootPath)/apim/main.bicep
+      stagingPath: $(rootPath)/
+      workspaceRoot: $(Build.SourcesDirectory)
+      serviceConnection: sp-ado-az-dev-eforms
+      stageName: dev
+      displayName: Deploy to DEV
+      previousStage: Build
+      environmentName: DEV
+      resourceGroup: 'dot-az-dev-aue-rg-eforms'
+      apimResourceGroup: 'dot-az-dev-aue-rg-apim'
+      functionAppName: 'dot-az-dev-aue-fun-eforms'
+      variableTemplate: variable-dev.yml
+      apimVnetCidr: '172.30.52.0/27'
+  
+  - template: templates/stage-arm-deployment.yaml 
+    parameters:
+      templatePath: $(rootPath)/functionApp/main.bicep
+      apimTemplatePath: $(rootPath)/apim/main.bicep
+      stagingPath: $(rootPath)/
+      workspaceRoot: $(Build.SourcesDirectory)
+      serviceConnection: sp-ado-az-tst-eforms
+      stageName: test
+      displayName: Deploy to TEST
+      previousStage: Build
+      environmentName: SIT
+      resourceGroup: 'dot-az-tst-aue-rg-eforms'
+      apimResourceGroup: 'dot-az-tst-aue-rg-apim'
+      functionAppName: 'dot-az-tst-aue-fun-eforms'
+      variableTemplate: variable-test.yml
+      apimVnetCidr: '172.30.27.0/27'
+
+  - template: templates/stage-arm-deployment.yaml 
+    parameters:
+      templatePath: $(rootPath)/functionApp/main.bicep
+      apimTemplatePath: $(rootPath)/apim/main.bicep
+      stagingPath: $(rootPath)/
+      workspaceRoot: $(Build.SourcesDirectory)
+      serviceConnection: sp-ado-az-uat-eforms
+      stageName: uat
+      displayName: Deploy to UAT
+      previousStage: test
+      environmentName: UAT
+      resourceGroup: 'dot-az-uat-aue-rg-eforms'
+      apimResourceGroup: 'dot-az-uat-aue-rg-apim'
+      functionAppName: 'dot-az-uat-aue-fun-eforms'
+      variableTemplate: variable-uat.yml
+      apimVnetCidr: '172.28.52.0/27'
+  
+  - template: templates/stage-arm-deployment.yaml 
+    parameters:
+      templatePath: $(rootPath)/functionApp/main.bicep
+      apimTemplatePath: $(rootPath)/apim/main.bicep
+      stagingPath: $(rootPath)/
+      workspaceRoot: $(Build.SourcesDirectory)
+      serviceConnection: sp-ado-az-prd-eforms
+      stageName: prod
+      displayName: Deploy to PROD
+      previousStage: uat
+      environmentName: PROD
+      resourceGroup: 'dot-az-prd-aue-rg-eforms'
+      apimResourceGroup: 'dot-az-prd-aue-rg-apim'
+      functionAppName: 'dot-az-prd-aue-fun-eforms'
+      variableTemplate: variable-prod.yml
+      apimVnetCidr: '172.27.52.0/27'

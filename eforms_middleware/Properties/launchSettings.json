@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "TestFunctionAppCallInsertSQLData": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "CertificateName": "dot-az-dev-aue-cert-fm",
+        "KeyVaultName": "dot-az-dev-aue-kvault-fm",
+        "ClientId": "dcb3bc23-2a77-43d4-a5f7-06b223abf259",
+        "TenantId": "ced71ed6-76dd-43d0-9acc-cf122b3bc423"
+      }
+    }
+  }
+}

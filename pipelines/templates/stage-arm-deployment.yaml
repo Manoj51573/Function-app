@@ -1,0 +1,111 @@
+parameters:
+  - name: templatePath
+  - name: apimTemplatePath
+  - name: parameters
+    default:
+  - name: stagingPath
+  - name: serviceConnection
+  - name: stageName
+  - name: resourceGroup
+  - name: apimResourceGroup
+  - name: functionAppName
+  - name: environmentName
+  - name: displayName
+  - name: previousStage
+    default: 
+  - name: workspaceRoot
+  - name: enabled
+    default: succeeded()
+  - name: variableTemplate
+  - name: apimVnetCidr
+
+stages:
+  - stage: ${{ parameters.stageName }}
+    variables:
+    - template: ${{ parameters.variableTemplate }}
+    displayName: ${{ parameters.displayName }}
+    dependsOn: ${{ parameters.previousStage }}
+    condition: ${{ parameters.enabled }}
+    jobs:
+    - job: setup_config 
+      pool:
+        vmImage: 'ubuntu-latest'
+      displayName: 'Setup App settings'  
+      steps:
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: ${{ parameters.serviceConnection }}
+          scriptType: 'bash'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            az deployment group create \
+              --name $(Build.BuildNumber) \
+              --resource-group ${{ parameters.resourceGroup }} \
+              --template-file ${{ parameters.templatePath }} \
+              --parameters env=$(environment) appServicesName=$(appServicesName) appServicesResourceGroupName=$(appServicesResourceGroupName) applicationInsightKey=$(APPINSIGHTS_INSTRUMENTATIONKEY) azureSqlConnectionString='$(AZURESQL-ConnectionString)' FromEmail=$(FromEmail) ToEmail=$(ToEmail) SMTPHost=$(SMTPHost) IsImpersonationAllowed=$(IsImpersonationAllowed) ReleaseTwo=$(ReleaseTwo) TrelisAccessManagementEmail=$(TrelisAccessManagementEmail) BaseEformsUrl=$(BaseEformsUrl)
+            az functionapp config set --net-framework-version v6.0 -g ${{ parameters.resourceGroup }} -n ${{ parameters.functionAppName }}
+            
+    - deployment: deploy_functionApp
+      pool:
+        name: 'CORAUE-DEVOPS1'
+      displayName: 'Deploy the function app'
+      dependsOn: setup_config
+      environment: ${{ parameters.environmentName }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - task: DownloadBuildArtifacts@0
+              inputs:
+                buildType: 'current' 
+                downloadType: 'single' # Choose whether to download a single artifact or all artifacts of a specific build. Options: single, specific
+                artifactName: 'drop'
+                downloadPath: '$(System.ArtifactsDirectory)' #'$(System.ArtifactsDirectory)' 
+            - task: AzureFunctionApp@1
+              displayName: 'Azure Function App Deploy'
+              inputs:
+                azureSubscription: '${{ parameters.serviceConnection }}'
+                appType: functionApp
+                appName: '${{ parameters.functionAppName }}'
+                deployToSlotOrASE: true
+                resourceGroupName: '${{ parameters.resourceGroup }}'
+                deploymentMethod: 'zipDeploy'
+                package: '$(System.ArtifactsDirectory)/drop/s.zip'
+
+    - job: Add_access_restriction
+      pool:
+        vmImage: 'ubuntu-latest'
+      displayName: 'Add APIM only rule'
+      dependsOn: deploy_functionApp
+      steps:
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: ${{ parameters.serviceConnection }}
+          scriptType: 'bash'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            set -e
+            RULE=$(az webapp config access-restriction show --resource-group ${{ parameters.resourceGroup }} --name ${{ parameters.functionAppName }} --query "ipSecurityRestrictions[? contains(name,'APIM')].name" -o tsv)
+            if [ -z $RULE ]; then
+              az webapp config access-restriction add --resource-group ${{ parameters.resourceGroup }} --name ${{ parameters.functionAppName }} --rule-name 'APIM' --action Allow --ip-address ${{ parameters.apimVnetCidr }} --priority 1
+            else
+              echo "Already restricted"
+            fi
+
+    - job: Publish_api 
+      pool:
+        vmImage: 'ubuntu-latest'  
+      displayName: 'Publish API'
+      dependsOn: deploy_functionApp
+      steps:
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: ${{ parameters.serviceConnection }}
+          scriptType: 'bash'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            az deployment group create \
+              --name $(Build.BuildNumber) \
+              --resource-group ${{ parameters.apimResourceGroup }} \
+              --template-file ${{ parameters.apimTemplatePath }} \
+              --parameters env=$(environment) appSubscriptionId=$(functionAppSubscriptionId) appServiceEnvironmentName=$(appServiceEnvironmentName) aud=$(jwtPolicyAud)

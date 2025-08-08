@@ -1,0 +1,85 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using DoT.Infrastructure.DbModels.Entities;
+using eforms_middleware.Specifications;
+using Xunit;
+
+namespace DoT.Eforms.Test.Specifications;
+
+public class TaskInfoForDateSpecificationTest
+{
+    [Fact]
+    public void Matches_all_tasks_for_the_day()
+    {
+        var today = DateTime.Today;
+        var specification = new TaskInfoForDateSpecification(taskDate: today, activeOnly: true);
+        var result = GetTestCollection()
+            .AsQueryable()
+            .Where(specification.Criteria);
+        
+        Assert.Collection(result, info =>
+        {
+            Assert.Equal(10, info.FormInfoId);
+            Assert.Equal(7, info.TaskInfoId);
+            Assert.Equal(today, info.SpecialReminderDate);
+            Assert.NotEqual(today, info.EscalationDate);
+            Assert.True(info.ActiveRecord);
+        }, info =>
+        {
+            Assert.Equal(13, info.FormInfoId);
+            Assert.Equal(9, info.TaskInfoId);
+            Assert.NotEqual(today, info.SpecialReminderDate);
+            Assert.Equal(today, info.EscalationDate);
+            Assert.True(info.ActiveRecord);
+        });
+    }
+
+    private static IEnumerable<TaskInfo> GetTestCollection()
+    {
+        var today = DateTime.Today;
+        return new List<TaskInfo>
+        {
+            new ()
+            {
+                FormInfoId = 1, TaskInfoId = 3, TaskCreatedDate = today, ActiveRecord = true
+            },
+            new ()
+            {
+                FormInfoId = 1, TaskInfoId = 2, TaskCreatedDate = today.AddDays(-1), ActiveRecord = false
+            },
+            new ()
+            {
+                FormInfoId = 1, TaskInfoId = 1, TaskCreatedDate = today.AddDays(-2), ActiveRecord = false
+            },
+            new ()
+            {
+                FormInfoId = 2, TaskInfoId = 5, TaskCreatedDate = today, ActiveRecord = true
+            },
+            new ()
+            {
+                FormInfoId = 2, TaskInfoId = 4, TaskCreatedDate = today, ActiveRecord = false
+            },
+            new ()
+            {
+                FormInfoId = 10, TaskInfoId = 6, TaskCreatedDate = today.AddDays(-3), ActiveRecord = false,
+                SpecialReminderDate = today, EscalationDate = today.AddDays(2)
+            },
+            new ()
+            {
+                FormInfoId = 10, TaskInfoId = 7, TaskCreatedDate = today.AddDays(-3), ActiveRecord = true,
+                SpecialReminderDate = today, EscalationDate = today.AddDays(2)
+            },
+            new ()
+            {
+                FormInfoId = 13, TaskInfoId = 8, TaskCreatedDate = today.AddDays(-5), ActiveRecord = false,
+                SpecialReminderDate = today.AddDays(-2), EscalationDate = today
+            },
+            new ()
+            {
+                FormInfoId = 13, TaskInfoId = 9, TaskCreatedDate = today.AddDays(-5), ActiveRecord = true,
+                SpecialReminderDate = today.AddDays(-2), EscalationDate = today
+            }
+        };
+    }
+}

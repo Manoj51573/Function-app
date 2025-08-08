@@ -1,0 +1,10 @@
+variables:
+- group : UAT
+- name: appServicesName
+  value: 'dot-az-uat-aue-asp-win01'
+- name: appServicesResourceGroupName
+  value: 'dot-az-uat-aue-rg-sharedappsvcs'
+- name: appServiceEnvironmentName
+  value: 'dot-az-uat-aue-ase-shareappsvc01'
+- name: functionAppSubscriptionId
+  value: '277bd6e2-1c72-4b41-863a-f799b7226d1b'
