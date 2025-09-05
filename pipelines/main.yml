@@ -32,7 +32,7 @@ stages:
       stageName: dev
       displayName: Deploy to DEV
       previousStage: Build
-      environmentName: DEV
+      environmentName: DEV1
       resourceGroup: 'dot-az-dev-aue-rg-eforms'
       apimResourceGroup: 'dot-az-dev-aue-rg-apim'
       functionAppName: 'dot-az-dev-aue-fun-eforms'
